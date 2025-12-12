@@ -1,0 +1,77 @@
+##############################################
+# MAVEN BUILD FILES
+##############################################
+
+target/
+!.mvn/wrapper/maven-wrapper.jar
+.mvn/wrapper/maven-wrapper.properties
+
+# JaCoCo coverage execution file
+*.exec
+
+##############################################
+# JAVA / CLASS FILES
+##############################################
+
+*.class
+*.jar
+*.war
+*.ear
+
+##############################################
+# IDE CONFIGURATIONS
+##############################################
+
+# IntelliJ IDEA
+.idea/
+*.iml
+out/
+
+# Eclipse
+.project
+.classpath
+.settings/
+
+# VS Code
+.vscode/
+
+##############################################
+# OPERATING SYSTEM FILES
+##############################################
+
+# macOS Finder
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Thumbs.db (Windows)
+Thumbs.db
+
+##############################################
+# LOGS AND TEMP FILES
+##############################################
+
+*.log
+*.tmp
+
+##############################################
+# CI PROJECT BUNDLES / ZIP ARCHIVES
+##############################################
+
+ci_project_bundle*
+*.zip
+
+##############################################
+# SONARQUBE / SCANNER TEMP FILES
+##############################################
+
+.scannerwork/
+
+##############################################
+# OTHER USELESS FILES
+##############################################
+
+# Compiled distributions
+dist/
+build/
+
