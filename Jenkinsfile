@@ -2,25 +2,15 @@ pipeline {
     agent any
 
     tools {
-        maven 'Maven3'      // Nom configuré dans Jenkins -> Global Tools
-        jdk 'JDK21'         // Nom configuré dans Jenkins -> Global Tools
+        maven 'Maven3'
+        jdk 'JDK21'
     }
 
     environment {
-        SONAR_TOKEN = credentials('SONAR_TOKEN')   // Secret Text dans Jenkins
+        SONAR_TOKEN = credentials('SONAR_TOKEN')
     }
 
     stages {
-
-        /* ------------------------------------------------------
-           CHECKOUT depuis GitHub (automatique via Pipeline from SCM)
-        ------------------------------------------------------- */
-        stage('Checkout') {
-            steps {
-                echo "Cloning repository from GitHub..."
-                checkout scm    // Fonctionne seulement si job = Pipeline from SCM
-            }
-        }
 
         /* ------------------------------------------------------
            BUILD MAVEN
@@ -95,9 +85,6 @@ pipeline {
             }
         }
 
-        /* ------------------------------------------------------
-           OPTIONAL DELIVERY
-        ------------------------------------------------------- */
         stage('Deliver') {
             steps {
                 echo "Delivery step (optional)"
@@ -107,7 +94,7 @@ pipeline {
 
     post {
         always {
-            echo "Cleaning workspace after build..."
+            echo "Cleaning workspace..."
             cleanWs()
         }
     }
