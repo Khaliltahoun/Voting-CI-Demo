@@ -1,93 +1,115 @@
 pipeline {
-  agent any
+    agent any
 
-  tools {
-    maven 'Maven3'      // Configure dans Jenkins > Global Tools
-    jdk 'JDK17'         // Configure dans Jenkins > Global Tools
-  }
-
-  environment {
-    SONAR_TOKEN = credentials('SONAR_TOKEN')       // Secret Text
-  }
-
-  stages {
-
-    stage('Checkout') {
-      steps {
-        checkout scm
-      }
+    tools {
+        maven 'Maven3'      // Nom configuré dans Jenkins -> Global Tools
+        jdk 'JDK21'         // Nom configuré dans Jenkins -> Global Tools
     }
 
-    stage('Build') {
-      steps {
-        sh 'mvn -B clean package -DskipTests'
-      }
-      post {
-        success {
-          archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+    environment {
+        SONAR_TOKEN = credentials('SONAR_TOKEN')   // Secret Text dans Jenkins
+    }
+
+    stages {
+
+        /* ------------------------------------------------------
+           CHECKOUT depuis GitHub (automatique via Pipeline from SCM)
+        ------------------------------------------------------- */
+        stage('Checkout') {
+            steps {
+                echo "Cloning repository from GitHub..."
+                checkout scm    // Fonctionne seulement si job = Pipeline from SCM
+            }
         }
-      }
+
+        /* ------------------------------------------------------
+           BUILD MAVEN
+        ------------------------------------------------------- */
+        stage('Build') {
+            steps {
+                sh 'mvn -B clean package -DskipTests'
+            }
+            post {
+                success {
+                    archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+                }
+            }
+        }
+
+        /* ------------------------------------------------------
+           UNIT TESTS
+        ------------------------------------------------------- */
+        stage('Unit Tests') {
+            steps {
+                sh 'mvn -B test'
+            }
+            post {
+                always {
+                    junit '**/target/surefire-reports/*.xml'
+                }
+            }
+        }
+
+        /* ------------------------------------------------------
+           JACOCO COVERAGE
+        ------------------------------------------------------- */
+        stage('Code Coverage') {
+            steps {
+                sh 'mvn -B jacoco:report'
+            }
+            post {
+                success {
+                    publishHTML(target: [
+                        reportName: 'JaCoCo Coverage',
+                        reportDir: 'target/site/jacoco',
+                        reportFiles: 'index.html',
+                        keepAll: true
+                    ])
+                }
+            }
+        }
+
+        /* ------------------------------------------------------
+           SONARQUBE ANALYSIS
+        ------------------------------------------------------- */
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh """
+                        mvn sonar:sonar \
+                          -Dsonar.projectKey=voting-ci-demo \
+                          -Dsonar.token=$SONAR_TOKEN
+                    """
+                }
+            }
+        }
+
+        /* ------------------------------------------------------
+           QUALITY GATE BLOCKER
+        ------------------------------------------------------- */
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 3, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        /* ------------------------------------------------------
+           OPTIONAL DELIVERY
+        ------------------------------------------------------- */
+        stage('Deliver') {
+            steps {
+                echo "Delivery step (optional)"
+            }
+        }
     }
 
-    stage('Unit Tests') {
-      steps {
-        sh 'mvn -B test'
-      }
-      post {
+    post {
         always {
-          junit 'target/surefire-reports/*.xml'
+            echo "Cleaning workspace after build..."
+            cleanWs()
         }
-      }
     }
-
-    stage('Code Coverage') {
-      steps {
-        sh 'mvn -B jacoco:report'
-      }
-      post {
-        success {
-          publishHTML(target: [
-            reportName: 'JaCoCo Coverage',
-            reportDir: 'target/site/jacoco',
-            reportFiles: 'index.html',
-            keepAll: true
-          ])
-        }
-      }
-    }
-
-    stage('SonarQube Analysis') {
-      steps {
-        withSonarQubeEnv('SonarQube') {
-          sh """
-            mvn -B sonar:sonar \
-              -Dsonar.projectKey=voting-ci-demo \
-              -Dsonar.token=$SONAR_TOKEN
-          """
-        }
-      }
-    }
-
-    stage('Quality Gate') {
-      steps {
-        timeout(time: 3, unit: 'MINUTES') {
-          waitForQualityGate abortPipeline: true
-        }
-      }
-    }
-
-    stage('Deliver') {
-      steps {
-        echo "Delivery step - optional"
-      }
-    }
-  }
-
-  post {
-    always {
-      archiveArtifacts artifacts: 'target/site/jacoco/**', allowEmptyArchive: true
-      cleanWs()
-    }
-  }
 }
 
